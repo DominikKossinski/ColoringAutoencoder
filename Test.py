@@ -7,7 +7,7 @@ if __name__ == '__main__':
     (color, black) = load_test_img('kwiat.png', (960, 640))
     autoencoder = Autoencoder('Test', 64)
     autoencoder.build()
-    autoencoder.load('models/CA_after100/CA_after100_70.h5')
+    autoencoder.load('models/Autoencoder/Autoencoder_0.h5')
     y = autoencoder.predict(black)
     img = image.array_to_img(y, scale=False)
     img.save('colored.png')

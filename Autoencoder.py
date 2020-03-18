@@ -33,7 +33,8 @@ class Autoencoder:
         self.model.add(lay.BatchNormalization())
         self.model.add(lay.ReLU())
 
-        self.model.add(lay.Conv2D(128, (3, 3), kernel_initializer='he_uniform', kernel_constraint=max_norm(2.0), padding='same'))
+        self.model.add(
+            lay.Conv2D(128, (3, 3), kernel_initializer='he_uniform', kernel_constraint=max_norm(2.0), padding='same'))
 
         self.model.add(lay.BatchNormalization())
         self.model.add(lay.ReLU())
@@ -141,7 +142,7 @@ class GenerateCallback(tf.keras.callbacks.Callback):
             self.model.save(os.path.join(path, self.name + "_{}.h5".format(epoch)), save_format="h5")
             names = ['kwiat']
             for i in names:
-                (colored, black) = load_test_img(i + ".png", size=400)
+                (colored, black) = load_test_img(i + ".png", size=(400, 400))
                 y = self.model.predict(np.array([black]))[0] * 255.0
                 name = os.path.join(path, self.name + "_" + i + "_{}.png".format(epoch))
                 img = image.array_to_img(y, scale=False)
