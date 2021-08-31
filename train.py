@@ -21,7 +21,6 @@ def setup_args_parser() -> ArgumentParser:
 
 def main(args) -> None:
     setup_gpu()
-    print(args)
     x_train, y_train, x_val, y_val = load_data('oxford_flowers102', 5000, 75, args.format == AutoEncoderFormat.HSV)
     auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, args.format)
     optimizer = tf.keras.optimizers.Adam()
