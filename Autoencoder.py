@@ -13,7 +13,7 @@ from tensorflow.keras.preprocessing import image
 from tqdm import tqdm
 
 
-class Autoencoder:
+class Autoncoder:
 
     def add_encoder_layers(self):
         self.model.add(lay.Conv2D(32, (3, 3), activation='relu', kernel_constraint=max_norm(2.0),
@@ -142,7 +142,7 @@ class GenerateCallback(tf.keras.callbacks.Callback):
             self.model.save(os.path.join(path, self.name + "_{}.h5".format(epoch)), save_format="h5")
             names = ['kwiat']
             for i in names:
-                (colored, black) = load_test_img(i + ".png", size=(400, 400))
+                (colored, black) = load_test_img(i + ".png", size=(75, 75))
                 y = self.model.predict(np.array([black]))[0] * 255.0
                 name = os.path.join(path, self.name + "_" + i + "_{}.png".format(epoch))
                 img = image.array_to_img(y, scale=False)
@@ -202,8 +202,8 @@ def setup_gpu():
 if __name__ == '__main__':
     setup_gpu()
 
-    x_train, y_train, x_val, y_val = load_data('oxford_flowers102', 6000, 75)
-    autoencoder = Autoencoder('Autoencoder', 64)
+    x_train, y_train, x_val, y_val = load_data('oxford_flowers102', 5000, 75)
+    autoencoder = Autoencoder('Autoencoder', 32)
     opt = tf.keras.optimizers.Adam()
     autoencoder.build()
     autoencoder.compile(opt)
