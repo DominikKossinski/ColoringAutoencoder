@@ -9,8 +9,7 @@ from matplotlib import pyplot as plt
 from tensorflow.keras.constraints import max_norm
 
 from helpers.git_ignore_helper import create_model_gitignore
-from helpers.img_predict_callback import ImgPredictCallback
-from helpers.summary_writer import SummaryWriter
+from helpers.summary_writer import SummaryCallback
 
 
 class AutoEncoderFormat(Enum):
@@ -31,7 +30,6 @@ class ColoringAutoEncoder:
         create_model_gitignore(self.__models_path)
         self.__batch_size: int = batch_size
         self.__model = tf.keras.Sequential(name=name)
-        self.__summary_writer: SummaryWriter = SummaryWriter()
         self.__add_encoder_layers()
         self.__add_decoder_layers()
 
@@ -112,14 +110,15 @@ class ColoringAutoEncoder:
         os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
         save_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
+            save_best_only=True,
             verbose=1,
             save_weights_only=True
         )
-        img_predict_callback = ImgPredictCallback(self)
+        summary_callback = SummaryCallback(self)
         history = self.__model.fit(
             x_train, y_train, self.__batch_size, epochs,
             validation_data=(x_val, y_val),
-            callbacks=[save_callback, img_predict_callback]
+            callbacks=[save_callback, summary_callback]
         )
         self.__show_and_save_history(history)
 
