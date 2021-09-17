@@ -5,10 +5,12 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow.keras.layers as layers
+from keras_preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot as plt
 from tensorflow.keras.constraints import max_norm
 
 from helpers.git_ignore_helper import create_model_gitignore
+from helpers.img_helper import AutoEncoderImageDataGenerator
 from helpers.summary_writer import SummaryCallback
 
 
@@ -105,7 +107,15 @@ class ColoringAutoEncoder:
     def predict(self, x):
         return self.__model.predict(np.array([x]))[0]
 
-    def train(self, x_train, y_train, x_val, y_val, epochs: int):
+    def train(self, x_train, x_val, epochs: int):
+        img_gen = ImageDataGenerator(
+            rotation_range=30,
+            width_shift_range=1.0,
+            height_shift_range=1.0,
+            horizontal_flip=True,
+            vertical_flip=True
+        )
+        img_gen = AutoEncoderImageDataGenerator(self.is_hsv())
         checkpoint_path = os.path.join(self.__models_path, f'{self.__name}.h5')
         os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
         save_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -115,10 +125,28 @@ class ColoringAutoEncoder:
             save_weights_only=True
         )
         summary_callback = SummaryCallback(self)
+        print(f"Train len: {len(x_train)}")
+        print(f"Steps: {len(x_train) // self.__batch_size}")
+        # for e in range(epochs):
+        #     batches = 0
+        #     for x_batch in img_gen.flow(x_train):
+        #         print(x_batch.shape)
+        #         x_data = []
+        #         y_data = []
+        #         for i in x_batch:
+        #             print(i.shape)
+        #             x_data.append(tf.math.reduce_mean(i / 255.0, axis=2, keepdims=True))
+        #             y_data.append(i if not self.is_hsv() else rgb_to_hsv(i))
+        #         print(np.array(x_data).shape)
+        #     for c in callbacks:
+        #         c.on
+        #         exit(-5)
         history = self.__model.fit(
-            x_train, y_train, self.__batch_size, epochs,
-            validation_data=(x_val, y_val),
-            callbacks=[save_callback, summary_callback]
+            img_gen.flow(x_train, batch_size=self.__batch_size, subset="training"),
+            batch_size=self.__batch_size,
+            validation_data=img_gen.flow(x_val, batch_size=self.__batch_size, subset="validation"),
+            callbacks=[save_callback, summary_callback],
+            steps_per_epoch=len(x_train) // self.__batch_size, epochs=epochs
         )
         self.__show_and_save_history(history)
 
