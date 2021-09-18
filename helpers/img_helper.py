@@ -6,6 +6,7 @@ import tensorflow as tf
 import tensorflow_datasets as tf_ds
 from PIL import Image
 from tensorflow.image import rgb_to_hsv
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tqdm import tqdm
 
 
@@ -21,111 +22,67 @@ def load_image(path, size: Tuple[int, int] = None, is_hsv: bool = False) -> Tupl
     return img, gray_scale
 
 
-def load_data(name, nb_samples, size=100, is_hsv: bool = False):
+def load_data(name, nb_samples, size=100):
     size = (size, size)
     train = tf_ds.load(name=name, split=tf_ds.Split.TEST)
     train = train.shuffle(1024).prefetch(tf.data.experimental.AUTOTUNE)
 
-    train_x = prepare_data(train, "Train dataset", nb_samples, size, is_hsv)
+    train_x = prepare_data(train, "Train dataset", nb_samples, size)
 
     val = tf_ds.load(name=name, split=tf_ds.Split.TRAIN)
     val = val.shuffle(1024).prefetch(tf.data.experimental.AUTOTUNE)
 
-    val_x = prepare_data(val, "Validation dataset", nb_samples // 5, size, is_hsv)
+    val_x = prepare_data(val, "Validation dataset", nb_samples // 5, size)
     return train_x, val_x
 
 
-def prepare_data(dataset, name, n, size, is_hsv: bool):
+def prepare_data(dataset, name, n, size):
     samples = list(dataset)[:n]
     data_x = []
-    # data_y = []
-    i = 0
     for element in tqdm(samples, desc=name):
         img = Image.fromarray(np.array(element["image"]))
         if size is not None:
             img = img.resize(size)
-        # gray_scale = img.convert('L')
-        # x = np.mean(np.asarray(gray_scale) / 255.0, axis=2, dtype="float32")
-        y = np.asarray(img, dtype="float32") / 255.0
-        # if is_hsv:
-        #     y = rgb_to_hsv(y)
-        data_x.append(y)
-        if i == 0:
-            plt.imshow(y)
-            plt.show()
-            i += 1
-        # data_y.append(y)
+        x = np.asarray(img, dtype="float32") / 255.0
+        data_x.append(x)
     data_x = np.array(data_x, dtype='float32')
-    # data_x = np.reshape(data_x, (data_x.shape[0], data_x.shape[1], data_x.shape[2], 3))
-    # data_y = np.array(data_y, dtype='float32')
-    return data_x  # , data_y
+    return data_x
 
 
-class AutoEncoderImageDataGenerator(tf.keras.preprocessing.image.ImageDataGenerator):
+class AutoEncoderImageDataGenerator(tf.keras.utils.Sequence):
 
-    def __init__(self, is_hsv: bool):
-        super(AutoEncoderImageDataGenerator, self).__init__(
+    def __init__(self, x_train, batch_size: int, shuffle: bool, is_hsv: bool):
+        super(AutoEncoderImageDataGenerator, self).__init__()
+        self.__image_data_generator = ImageDataGenerator(
             rotation_range=30,
             width_shift_range=1.0,
             height_shift_range=1.0,
             horizontal_flip=True,
             vertical_flip=True,
         )
-        self.__is_hsv = is_hsv
+        self.__x_train = x_train
+        self.__batch_size: int = batch_size
+        self.__shuffle: bool = shuffle
+        self.__is_hsv: bool = is_hsv
 
-    def flow(self,
-             x,
-             y=None,
-             batch_size=32,
-             shuffle=True,
-             sample_weight=None,
-             seed=None,
-             save_to_dir=None,
-             save_prefix='',
-             save_format='png',
-             subset=None):
-        steps = len(x) // batch_size
-        x = super(AutoEncoderImageDataGenerator, self).flow(
-            x,
-            y=None,
-            batch_size=batch_size,
-            shuffle=True,
-            sample_weight=None,
-            seed=None,
-            save_to_dir=None,
-            save_prefix='',
-            save_format='png',
-            subset=None)
-        print(x)
+    def __getitem__(self, index):
+        batch = self.__x_train[index * self.__batch_size: (index + 1) * self.__batch_size]
+        return self.__prepare_data(batch)
+
+    def __len__(self):
+        return len(self.__x_train) // self.__batch_size
+
+    def on_epoch_end(self):
+        if self.__shuffle:
+            self.__x_train = np.random.shuffle(self.__x_train)
+
+    def __prepare_data(self, batch):
         x_data = []
         y_data = []
-        n = 0
-        for batch in tqdm(x):
-            if n >= steps:
-                break
-            # x_batch = []
-            # y_batch = []
-            for i in batch:
-                x_data.append(tf.math.reduce_mean(i / 255.0, axis=2, keepdims=True))
-                y_data.append(i if not self.__is_hsv else rgb_to_hsv(i))
-            # x_data.append(x_batch)
-            # y_data.append(y_batch)
-            n += 1
+        for i in batch:
+            x = self.__image_data_generator.random_transform(i)
+            x_data.append(tf.math.reduce_mean(x, axis=2, keepdims=True))
+            y_data.append(x if not self.__is_hsv else rgb_to_hsv(i))
         x_data = np.array(x_data)
         y_data = np.array(y_data)
-        print(x_data.shape)
-        print(y_data.shape)
-        # if self.__is_hsv:
-        #     y = rgb_to_hsv(x)
-        # else:
-        #     y = x
-        # print(tf.math.reduce_mean(x/255.0, axis=2))
-        # print(y)
-        # plt.imshow(x_data[0], cmap='gray')
-        # print(x_data[0])
-        # plt.show()
-        #
-        # plt.imshow(y_data[0])
-        # plt.show()
-        return tf.keras.preprocessing.image.NumpyArrayIterator(x_data, y_data, self, batch_size)
-        # return tf.math.reduce_mean(x / 255.0, axis=2), y
+        return x_data, y_data

@@ -115,7 +115,8 @@ class ColoringAutoEncoder:
             horizontal_flip=True,
             vertical_flip=True
         )
-        img_gen = AutoEncoderImageDataGenerator(self.is_hsv())
+        train_gen = AutoEncoderImageDataGenerator(x_train, self.__batch_size, False, is_hsv=self.is_hsv())
+        val_gen = AutoEncoderImageDataGenerator(x_val, self.__batch_size, False, is_hsv=self.is_hsv())
         checkpoint_path = os.path.join(self.__models_path, f'{self.__name}.h5')
         os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
         save_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -125,26 +126,10 @@ class ColoringAutoEncoder:
             save_weights_only=True
         )
         summary_callback = SummaryCallback(self)
-        print(f"Train len: {len(x_train)}")
-        print(f"Steps: {len(x_train) // self.__batch_size}")
-        # for e in range(epochs):
-        #     batches = 0
-        #     for x_batch in img_gen.flow(x_train):
-        #         print(x_batch.shape)
-        #         x_data = []
-        #         y_data = []
-        #         for i in x_batch:
-        #             print(i.shape)
-        #             x_data.append(tf.math.reduce_mean(i / 255.0, axis=2, keepdims=True))
-        #             y_data.append(i if not self.is_hsv() else rgb_to_hsv(i))
-        #         print(np.array(x_data).shape)
-        #     for c in callbacks:
-        #         c.on
-        #         exit(-5)
         history = self.__model.fit(
-            img_gen.flow(x_train, batch_size=self.__batch_size, subset="training"),
+            train_gen,
             batch_size=self.__batch_size,
-            validation_data=img_gen.flow(x_val, batch_size=self.__batch_size, subset="validation"),
+            validation_data=val_gen,
             callbacks=[save_callback, summary_callback],
             steps_per_epoch=len(x_train) // self.__batch_size, epochs=epochs
         )
