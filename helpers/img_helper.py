@@ -1,24 +1,28 @@
 from typing import Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tf_ds
 from PIL import Image
 from tensorflow.image import rgb_to_hsv
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow_io.python.experimental.color_ops import rgb_to_lab
 from tqdm import tqdm
 
+from autoencoders.ColoringAutoEncoder import AutoEncoderFormat
 
-def load_image(path, size: Tuple[int, int] = None, is_hsv: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+
+def load_image(path, format: AutoEncoderFormat, size: Tuple[int, int] = None) -> Tuple[np.ndarray, np.ndarray]:
     img = Image.open(path)
     if size is not None:
         img = img.resize(size)
     gray_scale = np.mean(np.asarray(img, dtype='float32') / 255.0, axis=2)
     gray_scale = np.reshape(gray_scale, (gray_scale.shape[0], gray_scale.shape[1], 1))
     img = np.asarray(img, dtype='float32') / 255.0
-    if is_hsv:
+    if format == AutoEncoderFormat.HSV:
         img = rgb_to_hsv(img)
+    elif format == AutoEncoderFormat.LAB:
+        img = rgb_to_lab(img)
     return img, gray_scale
 
 
@@ -51,7 +55,7 @@ def prepare_data(dataset, name, n, size):
 
 class AutoEncoderImageDataGenerator(tf.keras.utils.Sequence):
 
-    def __init__(self, x_train, batch_size: int, shuffle: bool, is_hsv: bool):
+    def __init__(self, x_train, batch_size: int, shuffle: bool, format: AutoEncoderFormat, data_ag: bool):
         super(AutoEncoderImageDataGenerator, self).__init__()
         self.__image_data_generator = ImageDataGenerator(
             rotation_range=30,
@@ -63,7 +67,8 @@ class AutoEncoderImageDataGenerator(tf.keras.utils.Sequence):
         self.__x_train = x_train
         self.__batch_size: int = batch_size
         self.__shuffle: bool = shuffle
-        self.__is_hsv: bool = is_hsv
+        self.__format: AutoEncoderFormat = format
+        self.__data_ag: bool = data_ag
 
     def __getitem__(self, index):
         batch = self.__x_train[index * self.__batch_size: (index + 1) * self.__batch_size]
@@ -80,9 +85,20 @@ class AutoEncoderImageDataGenerator(tf.keras.utils.Sequence):
         x_data = []
         y_data = []
         for i in batch:
-            x = self.__image_data_generator.random_transform(i)
+            if self.__data_ag:
+                x = self.__image_data_generator.random_transform(i)
+            else:
+                x = i
             x_data.append(tf.math.reduce_mean(x, axis=2, keepdims=True))
-            y_data.append(x if not self.__is_hsv else rgb_to_hsv(i))
+            if self.__format == AutoEncoderFormat.RGB:
+                y = x
+            elif self.__format == AutoEncoderFormat.HSV:
+                y = rgb_to_hsv(x)
+            elif self.__format == AutoEncoderFormat.LAB:
+                y = rgb_to_lab(x)
+            else:
+                raise ValueError(f"No format: {self.__format}")
+            y_data.append(y)
         x_data = np.array(x_data)
         y_data = np.array(y_data)
         return x_data, y_data

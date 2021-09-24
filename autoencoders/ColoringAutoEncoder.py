@@ -1,5 +1,4 @@
 import os
-from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -9,28 +8,22 @@ from keras_preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot as plt
 from tensorflow.keras.constraints import max_norm
 
+from autoencoders.AutoEncoderFormat import AutoEncoderFormat
 from helpers.git_ignore_helper import create_model_gitignore
 from helpers.img_helper import AutoEncoderImageDataGenerator
 from helpers.summary_writer import SummaryCallback
 
 
-class AutoEncoderFormat(Enum):
-    RGB = "RGB"
-    HSV = "HSV"
-
-    def __str__(self):
-        return self.value
-
-
 class ColoringAutoEncoder:
 
-    def __init__(self, models_path: str, name: str, batch_size: int, format: AutoEncoderFormat):
+    def __init__(self, models_path: str, name: str, batch_size: int, format: AutoEncoderFormat, data_ag: bool):
         self.__format: AutoEncoderFormat = format
         self.__name: str = f'{name}{format}'
         self.__models_path: str = os.path.join(models_path, self.__name)
         os.makedirs(self.__models_path, exist_ok=True)
         create_model_gitignore(self.__models_path)
         self.__batch_size: int = batch_size
+        self.__data_ag: bool = data_ag
         self.__model = tf.keras.Sequential(name=name)
         self.__add_encoder_layers()
         self.__add_decoder_layers()
@@ -115,8 +108,8 @@ class ColoringAutoEncoder:
             horizontal_flip=True,
             vertical_flip=True
         )
-        train_gen = AutoEncoderImageDataGenerator(x_train, self.__batch_size, False, is_hsv=self.is_hsv())
-        val_gen = AutoEncoderImageDataGenerator(x_val, self.__batch_size, False, is_hsv=self.is_hsv())
+        train_gen = AutoEncoderImageDataGenerator(x_train, self.__batch_size, False, self.__format, self.__data_ag)
+        val_gen = AutoEncoderImageDataGenerator(x_val, self.__batch_size, False, self.__format, self.__data_ag)
         checkpoint_path = os.path.join(self.__models_path, f'{self.__name}.h5')
         os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
         save_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -149,8 +142,8 @@ class ColoringAutoEncoder:
         loss_frame = pd.DataFrame(data={"loss": loss, "val_loss": val_loss})
         loss_frame.to_csv(os.path.join(self.__models_path, f'{self.__name}_loss.csv'), sep=";")
 
-    def is_hsv(self):
-        return self.__format == AutoEncoderFormat.HSV
+    def get_format(self) -> AutoEncoderFormat:
+        return self.__format
 
     def get_name(self) -> str:
         return self.__name

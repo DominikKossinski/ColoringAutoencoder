@@ -2,7 +2,8 @@ from argparse import ArgumentParser
 
 import tensorflow as tf
 
-from autoencoders.ColoringAutoEncoder import AutoEncoderFormat, ColoringAutoEncoder
+from autoencoders.AutoEncoderFormat import AutoEncoderFormat
+from autoencoders.ColoringAutoEncoder import ColoringAutoEncoder
 from helpers.img_helper import load_data
 from helpers.tf_helper import setup_gpu
 
@@ -16,14 +17,14 @@ def setup_args_parser() -> ArgumentParser:
     arg_parser.add_argument(
         "-f", "--format", type=AutoEncoderFormat, choices=list(AutoEncoderFormat), default=AutoEncoderFormat.RGB
     )
-    # TODO Add data agumentation argument
+    arg_parser.add_argument("-da", "--data-ag", help="Data agumentation", action="store_true")
     return arg_parser
 
 
 def main(args) -> None:
     setup_gpu()
     x_train, x_val = load_data('oxford_flowers102', 5_000, 75)
-    auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, args.format)
+    auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, args.format, args.data_ag)
     optimizer = tf.keras.optimizers.Adam()
     auto_encoder.build()
     auto_encoder.compile(optimizer)

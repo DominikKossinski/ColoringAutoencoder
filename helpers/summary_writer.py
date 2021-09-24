@@ -8,7 +8,9 @@ import tensorflow as tf
 from tensorflow import summary
 from tensorflow.image import hsv_to_rgb
 from tensorflow.keras.preprocessing import image as tf_image
+from tensorflow_io.python.experimental.color_ops import lab_to_rgb
 
+from autoencoders.AutoEncoderFormat import AutoEncoderFormat
 from helpers.img_helper import load_image
 
 
@@ -62,8 +64,11 @@ class SummaryCallback(tf.keras.callbacks.Callback):
                                      name=f'{self.__auto_encoder.get_name()}_{epoch}')
             names = ['kwiat']
             for i in names:
-                (colored, black) = load_image(i + ".png", size=(75, 75), is_hsv=self.__auto_encoder.is_hsv())
+                ae_format = self.__auto_encoder.get_format()
+                (colored, black) = load_image(i + ".png", ae_format, size=(75, 75))
                 y = self.__auto_encoder.predict(black)
-                if self.__auto_encoder.is_hsv():
+                if ae_format == AutoEncoderFormat.HSV:
                     y = hsv_to_rgb(y)
+                elif ae_format == AutoEncoderFormat.LAB:
+                    y = lab_to_rgb(y)
                 self.__writer.write_val_image(i, y, epoch)
