@@ -23,6 +23,7 @@ def load_image(path, format: AutoEncoderFormat, size: Tuple[int, int] = None) ->
         img = rgb_to_hsv(img)
     elif format == AutoEncoderFormat.LAB:
         img = rgb_to_lab(img)
+        img = (img + np.array([0, 128, 128])) / np.array([100, 255, 255])
     return img, gray_scale
 
 
@@ -96,6 +97,7 @@ class AutoEncoderImageDataGenerator(tf.keras.utils.Sequence):
                 y = rgb_to_hsv(x)
             elif self.__format == AutoEncoderFormat.LAB:
                 y = rgb_to_lab(x)
+                y = (y + np.array([0, 128, 128])) / np.array([100, 255, 255])
             else:
                 raise ValueError(f"No format: {self.__format}")
             y_data.append(y)

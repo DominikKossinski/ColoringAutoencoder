@@ -70,5 +70,8 @@ class SummaryCallback(tf.keras.callbacks.Callback):
                 if ae_format == AutoEncoderFormat.HSV:
                     y = hsv_to_rgb(y)
                 elif ae_format == AutoEncoderFormat.LAB:
+                    y = y * np.array([100, 255, 255]) - np.array([0, 128, 128])
                     y = lab_to_rgb(y)
+                else:
+                    raise ValueError(f"No format: {ae_format}")
                 self.__writer.write_val_image(i, y, epoch)
