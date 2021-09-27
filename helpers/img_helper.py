@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tf_ds
@@ -12,10 +13,9 @@ from tqdm import tqdm
 from autoencoders.ColoringAutoEncoder import AutoEncoderFormat
 
 
-def load_image(path, format: AutoEncoderFormat, size: Tuple[int, int] = None) -> Tuple[np.ndarray, np.ndarray]:
+def load_image(path, format: AutoEncoderFormat, size: Tuple[int, int]) -> Tuple[np.ndarray, np.ndarray]:
     img = Image.open(path)
-    if size is not None:
-        img = img.resize(size)
+    img = img.resize(size)
     gray_scale = np.mean(np.asarray(img, dtype='float32') / 255.0, axis=2)
     gray_scale = np.reshape(gray_scale, (gray_scale.shape[0], gray_scale.shape[1], 1))
     img = np.asarray(img, dtype='float32') / 255.0
@@ -44,11 +44,16 @@ def load_data(name, nb_samples, size=100):
 def prepare_data(dataset, name, n, size):
     samples = list(dataset)[:n]
     data_x = []
+    first = True
     for element in tqdm(samples, desc=name):
         img = Image.fromarray(np.array(element["image"]))
         if size is not None:
             img = img.resize(size)
         x = np.asarray(img, dtype="float32") / 255.0
+        if first:
+            plt.imshow(x)
+            plt.show()
+            first = False
         data_x.append(x)
     data_x = np.array(data_x, dtype='float32')
     return data_x

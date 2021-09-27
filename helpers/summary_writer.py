@@ -65,7 +65,7 @@ class SummaryCallback(tf.keras.callbacks.Callback):
             names = ['kwiat']
             for i in names:
                 ae_format = self.__auto_encoder.get_format()
-                (colored, black) = load_image(i + ".png", ae_format, size=(75, 75))
+                (colored, black) = load_image(i + ".png", ae_format, size=(150, 150))
                 y = self.__auto_encoder.predict(black)
                 if ae_format == AutoEncoderFormat.HSV:
                     y = hsv_to_rgb(y)

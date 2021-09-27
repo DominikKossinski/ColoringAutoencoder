@@ -9,7 +9,15 @@ images (75 x 75 px) from
 To start model training type command:
 
 ```
-
+python train.py 
+    -h, --help                                  show this help message and exit
+    -e EPOCHS, --epochs EPOCHS                  Number of training epochs
+    --path PATH                                 Models directory path
+    --name NAME                                 Model name
+    -bs BATCH_SIZE, --batch-size BATCH_SIZE     Batch size
+    -f {RGB,HSV,LAB}, --format {RGB,HSV,LAB}    Output image format
+    -da, --data-ag                              Data agumentation
+                
 ```
 
 During the training open next command line and type, to start Tensorboard:
@@ -32,13 +40,13 @@ jupyter-notebook examples.ipynb
 
 ## Images examples
 
+### Input
+| Original image | Input Image
+| --- | --- |
+| ![Input image](original.png) | ![Black and white image](black.png) |
+
+### Output
+| RGB | HSV| LAB |
+| --- | --- |  --- |
+| ![RGB](colored_rgb.png) | ![RGB](colored_hsv.png) | ![RGB](colored_lab.png)
 Example:
-
-Input image:
-![Input image](original.png)
-
-Black and white image:
-![Black and white image](black.png)
-
-Colored image:
-![Colored image](colored.png)
