@@ -1,7 +1,9 @@
 from argparse import ArgumentParser
 
+import numpy as np
 from tensorflow.image import hsv_to_rgb
 from tensorflow.keras.preprocessing import image
+from tensorflow_io.python.experimental.color_ops import lab_to_rgb
 
 from autoencoders.ColoringAutoEncoder import AutoEncoderFormat, ColoringAutoEncoder
 from helpers.img_helper import load_image
@@ -18,9 +20,9 @@ def setup_args_parser() -> ArgumentParser:
 
 def main(args):
     setup_gpu()
-    (color, black) = load_image('kwiat.png', (960, 640))
+    (color, black) = load_image('kwiat.png', AutoEncoderFormat.RGB, (960, 640))
 
-    rgb_auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, AutoEncoderFormat.RGB)
+    rgb_auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, AutoEncoderFormat.RGB, True)
     rgb_auto_encoder.build()
     rgb_auto_encoder.load()
     y_rgb = rgb_auto_encoder.predict(black)
@@ -28,7 +30,7 @@ def main(args):
     img = image.array_to_img(y_rgb, scale=False)
     img.save('colored_rgb.png')
 
-    hsv_auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, AutoEncoderFormat.HSV)
+    hsv_auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, AutoEncoderFormat.HSV, True)
     hsv_auto_encoder.build()
     hsv_auto_encoder.load()
     y_hsv = hsv_auto_encoder.predict(black)
@@ -36,6 +38,16 @@ def main(args):
     y_rgb *= 255.0
     img = image.array_to_img(y_rgb, scale=False)
     img.save('colored_hsv.png')
+
+    lab_auto_encoder = ColoringAutoEncoder(args.path, args.name, args.batch_size, AutoEncoderFormat.LAB, True)
+    lab_auto_encoder.build()
+    lab_auto_encoder.load()
+    img = lab_auto_encoder.predict(black)
+    img = img * np.array([100, 255, 255]) - np.array([0, 128, 128])
+    img = lab_to_rgb(img)
+    img *= 255
+    img = image.array_to_img(img, scale=False)
+    img.save('colored_lab.png')
 
     black *= 255.0
     img = image.array_to_img(black, scale=False)
