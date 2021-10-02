@@ -20,6 +20,18 @@ python train.py
                 
 ```
 
+## Test
+
+To test pretrained models type command:
+```
+python test.py
+    -h, --help                                  show this help message and exit
+    --path PATH                                 Models directory path
+    --name NAME                                 Model name
+    -bs BATCH_SIZE, --batch-size BATCH_SIZE     Batch size
+
+```
+
 During the training open next command line and type, to start Tensorboard:
 
 ```
@@ -49,4 +61,3 @@ jupyter-notebook examples.ipynb
 | RGB | HSV| LAB |
 | --- | --- |  --- |
 | ![RGB](colored_rgb.png) | ![RGB](colored_hsv.png) | ![RGB](colored_lab.png)
-Example:
